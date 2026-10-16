@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<title>Сірникова головоломка</title>
+<style>
+:root{--soot:#1c1816;--strike:#2e231f;--wood:#e9c27b;--flame:#ff8a3d;--paper:#f3e9d8;--head:#d8402f;--ok:#7be08a;--bad:#ff6b5e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{font-family:Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--paper);background:var(--soot);display:flex;justify-content:center;user-select:none;-webkit-user-select:none;overflow:hidden}
+.screen{display:none;width:100%;max-width:560px;height:100%;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+.screen.on{display:flex}
+#home{justify-content:space-between;padding-top:max(64px,env(safe-area-inset-top));padding-bottom:max(48px,env(safe-area-inset-bottom))}
+.hero{display:flex;flex-direction:column;gap:14px;align-items:center}
+h1{font-size:clamp(2.2rem,10vw,3.4rem);line-height:1.08;font-weight:800;margin:0}
+.lead{margin:0;font-size:1.2rem;color:#c9b9a2}
+.rules{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:24px;font-size:1.15rem;line-height:1.4;text-align:left;max-width:30ch;color:#d9ccb6}
+.rules li{display:flex;gap:18px;align-items:center}
+.rules li::before{content:"";flex:none;width:38px;height:9px;border-radius:5px;background:radial-gradient(circle at 6px 50%,var(--head) 5.5px,transparent 6px),linear-gradient(#f6d792,#d9a95a)}
+.rules b{color:var(--paper)}
+button{font:inherit;cursor:pointer;border:0;color:var(--soot)}
+.go{background:var(--flame);font-size:1.7rem;font-weight:700;padding:18px 54px;border-radius:999px;box-shadow:0 6px 0 #a8501a;transition:transform .08s,box-shadow .08s}
+.go:active{transform:translateY(5px);box-shadow:0 1px 0 #a8501a}
+.ghost-btn{background:transparent;color:var(--paper);border:2px solid #6b5a4c;padding:10px 22px;border-radius:999px;font-size:1rem}
+.top{width:100%;display:flex;align-items:center;gap:14px}
+#time{font-size:2.6rem;font-weight:700;min-width:2.2ch;text-align:right;font-variant-numeric:tabular-nums}
+.bar{flex:1;height:14px;border-radius:7px;background:var(--strike);overflow:hidden}
+#bar{display:block;height:100%;width:100%;background:var(--flame)}
+.warn #bar{background:var(--bad)}
+.warn #time{color:var(--bad)}
+#task{font-size:1.25rem;line-height:1.3;max-width:26ch}
+#task b{color:var(--flame)}
+.sub{font-size:.95rem;color:#b9a994;margin:-8px 0 0;max-width:34ch}
+#sv{width:100%;max-width:520px;height:auto;touch-action:none;background:var(--strike);border-radius:22px;padding:6px}
+.fixed .m{cursor:default;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
+.m{cursor:grab;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.gh{fill:rgba(255,255,255,.04);stroke:rgba(243,233,216,.3);stroke-width:1.5;stroke-dasharray:4 3}
+.dragging .gh{stroke:rgba(255,138,61,.7)}
+.gh.tgt{fill:rgba(255,138,61,.4);stroke:var(--flame);stroke-dasharray:none}
+.tray{fill:rgba(0,0,0,.25);stroke:rgba(243,233,216,.2);stroke-width:2}
+.lbl{fill:#b9a994;font-size:13px;font-family:inherit}
+.dm{transition:transform .15s;filter:drop-shadow(0 8px 6px rgba(0,0,0,.55))}
+.ov{position:fixed;inset:0;background:rgba(18,14,12,.88);display:none;align-items:center;justify-content:center;text-align:center;padding:24px}
+.ov.on{display:flex}
+.card h2{font-size:2.4rem;margin:0 0 8px}
+.card p{font-size:1.2rem;margin:0 0 18px}
+.card small{color:#b9a994}
+@media (prefers-reduced-motion:reduce){.dm{transition:none}}
+</style>
+</head>
+<body>
+
+<section class="screen on" id="home">
+  <div class="hero"><h1>Сірникова<br>головоломка</h1><p class="lead">Одна рівність. Одна хвилина.</p></div>
+  <ul class="rules">
+    <li><span>Рівність зі сірників <b>хибна</b>. Виправ її.</span></li>
+    <li><span>Тягни сірники пальцем у порожні комірки з пунктиром.</span></li>
+    <li><span>На все є <b>1 хвилина</b>.</span></li>
+  </ul>
+  <button class="go" id="play">Грати</button>
+</section>
+
+<section class="screen" id="game">
+  <div class="top"><div id="time">60</div><div class="bar"><i id="bar"></i></div></div>
+  <div id="task"></div>
+  <p class="sub" id="hint"></p>
+  <svg id="sv" viewBox="0 0 440 140">
+    <defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d792"/><stop offset="1" stop-color="#d9a95a"/></linearGradient><linearGradient id="wf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c58f52"/><stop offset="1" stop-color="#8f5f30"/></linearGradient></defs>
+    <g id="board"></g><g id="drag"></g>
+  </svg>
+  <button class="ghost-btn" id="reset">Почати спочатку</button>
+</section>
+
+<div class="ov" id="ov"><div class="card"><h2 id="ovT"></h2><p id="ovS"></p><small>Торкнись, щоб повернутись</small></div></div>
+
+<script>
+// ---------- Налаштування ----------
+const MIX={move1:1,move2:1,add1:1,add2:1}; // вага кожного типу задач
+const TIME=60;                              // секунд на задачу
+const HIST_LEN=40;                          // скільки останніх задач не повторювати
+
+// ---------- Модель: семисегментні цифри та знаки ----------
+const DIG=['abcdef','bc','abdeg','abcdg','bcfg','acdfg','acdefg','abc','abcdefg','abcdfg']
+  .map(s=>[...s].reduce((m,c)=>m|1<<(c.charCodeAt(0)-97),0));
+const OPM={'+':3,'−':1,'=':5};            // біти: 1 = горизонтальна, 2 = вертикальна, 4 = нижня горизонтальна
+const KIND=[0,1,0,1,0],BASE=[0,7,10,17,20],N=27; // позиції: цифра, знак, цифра, знак, цифра
+const ev=(x,o,y)=>o==='+'?x+y:x-y;
+
+// null = не рівність; true/false = рівність правильна/хибна
+function evalState(s){
+  const r=[];
+  for(let p=0;p<5;p++){
+    const m=(s>>BASE[p])&(KIND[p]?7:127);
+    const v=KIND[p]?Object.keys(OPM).find(k=>OPM[k]===m):(DIG.indexOf(m)<0?undefined:DIG.indexOf(m));
+    if(v===undefined)return null;
+    r.push(v);
+  }
+  const[a,o1,b,o2,c]=r;
+  if(o2==='='&&o1!=='=')return ev(a,o1,b)===c;
+  if(o1==='='&&o2!=='=')return a===ev(b,o2,c);
+  return null;
+}
+const mk=(a,o1,b,o2,c)=>DIG[a]|(OPM[o1]<<7)|(DIG[b]<<10)|(OPM[o2]<<17)|(DIG[c]<<20);
+const TARGETS=[];
+for(let a=0;a<10;a++)for(let b=0;b<10;b++)for(let c=0;c<10;c++)for(const o of '+−'){
+  const s1=mk(a,o,b,'=',c),s2=mk(a,'=',b,o,c);
+  if(evalState(s1)===true)TARGETS.push(s1);
+  if(evalState(s2)===true)TARGETS.push(s2);
+}
+
+// ---------- Генератор задач ----------
+const pick=(arr,k)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a.slice(0,k)};
+function oneMove(S,pl){
+  for(const i of pl)if((S>>i)&1)for(const j of pl)if(!((S>>j)&1)){
+    if(evalState((S&~(1<<i))|(1<<j))===true)return true;
+  }
+  return false;
+}
+// які комірки можна чіпати: знак «=» нерухомий, а нижня риска іншого знака ніколи не потрібна
+function playable(T){
+  const eq=((T>>BASE[1])&7)===5?1:3,op=4-eq,pl=[];
+  for(let i=0;i<N;i++){
+    if(i>=BASE[eq]&&i<BASE[eq]+3)continue;
+    if(i===BASE[op]+2)continue;
+    pl.push(i);
+  }
+  return{eq,op,pl};
+}
+let hist=[],lastKind='';
+function gen(kind){
+  const k=+kind.slice(-1),add=kind.startsWith('add');
+  for(let t=0;t<60000;t++){
+    const T=TARGETS[Math.random()*TARGETS.length|0];
+    const{eq,op,pl}=playable(T);
+    const on=pl.filter(i=>(T>>i)&1),off=pl.filter(i=>!((T>>i)&1));
+    let S=T;
+    pick(on,k).forEach(i=>S&=~(1<<i));
+    if(!add)pick(off,k).forEach(i=>S|=(1<<i));
+    if(evalState(S)!==false)continue;
+    if(!add&&k===2&&oneMove(S,pl))continue;
+    const key=kind+S;
+    if(hist.includes(key))continue;
+    return{S,k,add,kind,key,eq,op};
+  }
+  return null;
+}
+const KN=Object.keys(MIX);
+function pickKind(){
+  const c=KN.filter(k=>k!==lastKind),w=c.reduce((s,k)=>s+MIX[k],0);
+  let r=Math.random()*w;
+  for(const k of c){if((r-=MIX[k])<0)return k}
+  return c[0];
+}
+
+// ---------- Геометрія комірок ----------
+const SEG={a:[35,14,0],b:[63,40,90],c:[63,92,90],d:[35,118,0],e:[7,92,90],f:[7,40,90],g:[35,66,0]};
+const SL=[];
+for(let p=0;p<5;p++){
+  const ox=33+76*p;
+  if(KIND[p])SL.push({x:ox+35,y:66,r:0},{x:ox+35,y:66,r:90},{x:ox+35,y:88,r:0});
+  else for(const c of 'abcdefg')SL.push({x:ox+SEG[c][0],y:SEG[c][1],r:SEG[c][2]});
+}
+
+// ---------- Стан і малювання ----------
+const $=s=>document.querySelector(s);
+const svg=$('#sv'),board=$('#board'),dragL=$('#drag');
+let F=[],INIT=[],P=null,tm=null,ovTm=null,locked=true,busy=false,drag=null,SHOW=new Set(),LK=[];
+
+const match=fx=>`<g class="m"><rect x="-22" y="-4.5" width="44" height="9" rx="4" fill="url(#${fx?"wf":"w"})" stroke="${fx?"#5a3818":"#8a5f2a"}" stroke-width="1"/><ellipse cx="-18" cy="0" rx="6" ry="5.5" fill="${fx?"#a8342a":"#d8402f"}"/></g>`;
+
+function render(){
+  let h='';
+  if(P.add)h+=`<text x="220" y="146" class="lbl" text-anchor="middle">Запас</text><rect class="tray" x="110" y="152" width="220" height="50" rx="16"/>`;
+  SL.forEach((s,i)=>{
+    if(!SHOW.has(i))return;
+    h+=`<g data-i="${i}" transform="translate(${s.x} ${s.y}) rotate(${s.r})">`+
+      (F[i]?(LK[i]?`<g class="fixed">${match(1)}</g>`:match()+'<rect x="-26" y="-14" width="52" height="28" fill="transparent"/>')
+           :'<rect class="gh" x="-22" y="-4.5" width="44" height="9" rx="4"/>')+'</g>';
+  });
+  board.innerHTML=h;
+}
+const mask=()=>{let m=0;for(let i=0;i<N;i++)if(F[i])m|=1<<i;return m};
+const stockEmpty=()=>F.slice(N).every(v=>!v);
+
+const TXT={
+  move1:'Перемісти <b>1 сірник</b>, щоб рівність стала правильною',
+  move2:'Перемісти <b>2 сірники</b>, щоб рівність стала правильною',
+  add1:'Додай <b>1 сірник</b> із запасу, щоб рівність стала правильною',
+  add2:'Додай <b>2 сірники</b> із запасу, щоб рівність стала правильною'
+};
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id))}
+function home(){clearTimeout(ovTm);clearInterval(tm);$('#ov').classList.remove('on');show('home')}
+
+function start(){
+  let q=null;
+  for(let n=0;n<5&&!q;n++)q=gen(pickKind());
+  if(!q)q=gen('move1');
+  lastKind=q.kind;hist.push(q.key);if(hist.length>HIST_LEN)hist.shift();
+  P=q;SL.length=N;
+  if(q.add)(q.k===1?[220]:[180,260]).forEach(x=>SL.push({x,y:177,r:0}));
+  F=Array(SL.length).fill(false);
+  for(let i=0;i<N;i++)F[i]=!!((q.S>>i)&1);
+  for(let i=N;i<SL.length;i++)F[i]=true;
+  INIT=[...F];
+  const eqB=BASE[q.eq],opB=BASE[q.op];
+  SHOW=new Set(SL.map((_,i)=>i).filter(i=>i!==eqB+1&&i!==opB+2));
+  LK=F.map((v,i)=>i<N&&(q.add?v:(i===eqB||i===eqB+2)));
+  $('#hint').textContent=q.add?'Бери сірники лише із запасу й клади в порожні комірки. Вираз нерухомий.':'Сірники можна брати з цифр і знака «+» чи «−». Знак «=» нерухомий.';
+  svg.setAttribute('viewBox',q.add?'0 0 440 210':'0 0 440 140');
+  $('#task').innerHTML=TXT[q.kind];
+  drag=null;dragL.innerHTML='';busy=false;locked=false;
+  render();show('game');
+  const t0=Date.now();
+  clearInterval(tm);
+  tm=setInterval(()=>{
+    const left=Math.max(0,TIME-(Date.now()-t0)/1000);
+    $('#time').textContent=Math.ceil(left);
+    $('#bar').style.width=(left/TIME*100)+'%';
+    $('#game').classList.toggle('warn',left<=10);
+    if(left<=0)finish(false,TIME);
+  },100);
+  $('#time').textContent=TIME;$('#bar').style.width='100%';$('#game').classList.remove('warn');
+  t0Used=t0;
+}
+let t0Used=0;
+
+function finish(ok){
+  clearInterval(tm);locked=true;
+  if(drag){F[drag.i]=true;drag=null;dragL.innerHTML='';svg.classList.remove('dragging');render()}
+  const sec=Math.round((Date.now()-t0Used)/1000);
+  $('#ovT').textContent=ok?'Правильно!':'Час вийшов';
+  $('#ovT').style.color=ok?'var(--ok)':'var(--bad)';
+  $('#ovS').textContent=ok?`Розв’язав за ${sec} с`:'Не засмучуйся, спробуй ще раз із новою задачею';
+  $('#ov').classList.add('on');
+  ovTm=setTimeout(home,4500);
+}
+
+// ---------- Перетягування ----------
+const pt=e=>new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+
+svg.addEventListener('pointerdown',e=>{
+  if(locked||busy||drag)return;
+  const g=e.target.closest('[data-i]');if(!g)return;
+  const i=+g.dataset.i;if(!F[i]||LK[i])return;
+  e.preventDefault();svg.setPointerCapture(e.pointerId);
+  const p=pt(e),s=SL[i];
+  drag={i,ox:s.x-p.x,oy:s.y-p.y,x:s.x,y:s.y,r:s.r,tgt:i};
+  F[i]=false;render();
+  svg.classList.add('dragging');
+  dragL.innerHTML=`<g id="dg" transform="translate(${s.x} ${s.y})"><g class="dm" style="transform:rotate(${s.r}deg) scale(1.12)">${match()}</g></g>`;
+  highlight(i);
+});
+
+function highlight(j){
+  board.querySelectorAll('.tgt').forEach(n=>n.classList.remove('tgt'));
+  const n=board.querySelector(`[data-i="${j}"] .gh`);if(n)n.classList.add('tgt');
+}
+
+svg.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const p=pt(e);
+  drag.x=p.x+drag.ox;drag.y=p.y+drag.oy;
+  let best=-1,bs=1e9;
+  SL.forEach((s,j)=>{
+    if(F[j]||!SHOW.has(j))return;
+    const d=Math.hypot(s.x-drag.x,s.y-drag.y)-(s.r===SL[drag.i].r?6:0);
+    if(d<bs&&d<=34){bs=d;best=j}
+  });
+  drag.tgt=best;
+  highlight(best);
+  const r=best>=0?SL[best].r:SL[drag.i].r;
+  $('#dg').setAttribute('transform',`translate(${drag.x} ${drag.y})`);
+  $('#dg .dm').style.transform=`rotate(${r}deg) scale(1.12)`;
+});
+
+function release(e){
+  if(!drag)return;
+  const d=drag,j=d.tgt>=0?d.tgt:d.i,to=SL[j];
+  drag=null;busy=true;
+  $('#dg .dm').style.transform=`rotate(${to.r}deg) scale(1)`;
+  const x0=d.x,y0=d.y,t0=performance.now(),dur=170;
+  (function step(t){
+    const k=Math.min(1,(t-t0)/dur),ez=1-Math.pow(1-k,3);
+    $('#dg').setAttribute('transform',`translate(${x0+(to.x-x0)*ez} ${y0+(to.y-y0)*ez})`);
+    if(k<1)return requestAnimationFrame(step);
+    F[j]=true;dragL.innerHTML='';svg.classList.remove('dragging');busy=false;render();
+    if(!locked&&evalState(mask())===true&&stockEmpty())finish(true);
+  })(t0);
+}
+svg.addEventListener('pointerup',release);
+svg.addEventListener('pointercancel',release);
+
+$('#play').onclick=start;
+$('#reset').onclick=()=>{if(locked||busy||drag)return;F=[...INIT];render()};
+$('#ov').onclick=home;
+</script>
+</body>
+</html>
